@@ -1,0 +1,60 @@
+import requests
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+stores = []
+
+
+@app.route("/stores", methods=["POST"])
+def create_store():
+    global stores
+    data = request.get_json()
+    store_name = data.get('name')
+    if not store_name:
+        return jsonify({"error": "Store name is required"}), 400
+    new_store = {"name": store_name, "items": []}
+    stores.append(new_store)
+    return jsonify(new_store), 201
+
+
+@app.route("/stores/<string:store_name>/items", methods=["POST"])
+def create_item(store_name):
+    global stores
+    data = request.get_json()
+    item_name = data.get("name")
+    item_price = data.get("price")
+    if not item_name or not item_price:
+        return jsonify({"error": "item name and price are required"}), 400
+    for store in stores:
+        if store["name"] == store_name:
+            new_item = {"name": item_name, "price": item_price}
+            store["items"].append(new_item)
+            return jsonify(new_item), 201
+    return jsonify({"error": "store not found"}), 404
+
+
+@app.route("/stores", methods=["GET"])
+def list_stores():
+    return jsonify(stores)
+
+
+@app.route("/stores/<string:store_name>", methods=["GET"])
+def get_store(store_name):
+    for store in stores:
+        if store["name"] == store_name:
+            return jsonify(store)
+
+    return jsonify({"error": "Store not found"}), 404
+
+
+@app.route("/stores/<string:store_name>/items", methods=["GET"])
+def get_items_in_store(store_name):
+    for store in stores:
+        if store['name'] == store_name:
+            return jsonify(store["items"])
+    return jsonify({"error": "store not found"}), 404
+
+
+if __name__ == "__main__":
+    app.run(debug=True, port=8000)
